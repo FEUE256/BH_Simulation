@@ -21,7 +21,6 @@ namespace BlackHoleSimulationApp
 
             // Fönsterinställningar
             this.ResizeMode = ResizeMode.CanMinimize; // ej maximera
-            this.Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Resources/blackhole_icon.ico"));
 
             simulation = new BlackHoleSimulation(Width: 800, Height: 600, particleCount: 1500);
 
