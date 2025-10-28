@@ -19,13 +19,14 @@ namespace BlackHoleSimulationApp
         {
             InitializeComponent();
 
-            // Fönsterinställningar
-            this.ResizeMode = ResizeMode.CanMinimize; // ej maximera
+            // Window settings
+            this.ResizeMode = ResizeMode.CanMinimize;
+            this.Icon = new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Resources/blackhole_icon.ico"));
 
-            simulation = new BlackHoleSimulation(Width: 800, Height: 600, particleCount: 1500);
+            simulation = new BlackHoleSimulation(Width: 800, Height: 600, particleCount: 2000);
 
             timer = new DispatcherTimer();
-            timer.Interval = TimeSpan.FromMilliseconds(16); // ~60 FPS
+            timer.Interval = TimeSpan.FromMilliseconds(16);
             timer.Tick += Timer_Tick;
             timer.Start();
         }
@@ -36,7 +37,7 @@ namespace BlackHoleSimulationApp
 
             simulationCanvas.Children.Clear();
 
-            // Galaxbakgrund
+            // Galaxy background
             LinearGradientBrush galaxyBackground = new LinearGradientBrush();
             galaxyBackground.GradientStops.Add(new GradientStop(Colors.Black, 0));
             galaxyBackground.GradientStops.Add(new GradientStop(Colors.DarkBlue, 0.5));
@@ -59,7 +60,7 @@ namespace BlackHoleSimulationApp
                 simulationCanvas.Children.Add(ring);
             }
 
-            // Rita partiklar
+            // Draw particles
             foreach (var p in simulation.Particles)
             {
                 Ellipse ellipse = new Ellipse
@@ -74,7 +75,7 @@ namespace BlackHoleSimulationApp
                 simulationCanvas.Children.Add(ellipse);
             }
 
-            // Rita svart hål
+            // Draw black hole
             Ellipse blackHole = new Ellipse
             {
                 Width = simulation.BlackHoleRadius * 2,
@@ -117,23 +118,26 @@ namespace BlackHoleSimulationApp
             Particles = new List<Particle>();
             for (int i = 0; i < particleCount; i++)
             {
-                double angle = rnd.NextDouble() * 2 * Math.PI;
-                double radius = rnd.NextDouble() * Math.Min(width, height) / 2;
-                double x = BlackHoleX + Math.Cos(angle) * radius;
-                double y = BlackHoleY + Math.Sin(angle) * radius;
-
-                double speed = Math.Sqrt(G / radius) * 0.7;
-                double vx = -Math.Sin(angle) * speed;
-                double vy = Math.Cos(angle) * speed;
-
-                Particles.Add(new Particle { X = x, Y = y, VX = vx, VY = vy });
+                Particles.Add(CreateRandomParticle());
             }
+        }
+
+        private Particle CreateRandomParticle()
+        {
+            double angle = rnd.NextDouble() * 2 * Math.PI;
+            double radius = rnd.NextDouble() * Math.Min(width, height) / 2 + BlackHoleRadius + 20; // ensure outside black hole
+            double x = BlackHoleX + Math.Cos(angle) * radius;
+            double y = BlackHoleY + Math.Sin(angle) * radius;
+
+            double speed = Math.Sqrt(G / radius) * 0.7;
+            double vx = -Math.Sin(angle) * speed;
+            double vy = Math.Cos(angle) * speed;
+
+            return new Particle { X = x, Y = y, VX = vx, VY = vy };
         }
 
         public void Update()
         {
-            List<Particle> eatenParticles = new List<Particle>();
-
             foreach (var p in Particles)
             {
                 double dx = BlackHoleX - p.X;
@@ -156,10 +160,15 @@ namespace BlackHoleSimulationApp
                 p.X += p.VX;
                 p.Y += p.VY;
 
+                // Respawn particle instead of removing
                 if (distance < BlackHoleRadius)
                 {
-                    eatenParticles.Add(p);
-                    BlackHoleRadius += 0.02;
+                    BlackHoleRadius += 0.02; // still grows
+                    var newParticle = CreateRandomParticle();
+                    p.X = newParticle.X;
+                    p.Y = newParticle.Y;
+                    p.VX = newParticle.VX;
+                    p.VY = newParticle.VY;
                 }
 
                 // Wrap-around
@@ -168,9 +177,6 @@ namespace BlackHoleSimulationApp
                 if (p.Y < 0) p.Y += height;
                 if (p.Y > height) p.Y -= height;
             }
-
-            foreach (var p in eatenParticles)
-                Particles.Remove(p);
         }
     }
 }
